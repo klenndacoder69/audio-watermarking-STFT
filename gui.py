@@ -105,12 +105,16 @@ class App(customtkinter.CTk):
 
     def start_recording(self):
         self.record.start_recording()
+        
+    def stop_recording(self):
+        print("stop recording")
+        self.record.stop_recording()
+        for widget in self.plot_frame.winfo_children():
+            widget.destroy()
         canvas = self.record.show_wave(master_frame=self.plot_frame)
         canvas.draw()
         canvas.get_tk_widget().pack(fill=tk.BOTH)
-    def stop_recording(self):
-        print("stop recording")
-        
+
     def open_file(self):
         for widget in self.plot_frame.winfo_children():
             widget.destroy()

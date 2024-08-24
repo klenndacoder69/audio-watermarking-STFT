@@ -1,0 +1,4 @@
+
+# Note to self:
+
+In audio, no. of audio frames is equal to the number of samples per channel (x2 if stereo)
