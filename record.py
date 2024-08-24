@@ -1,0 +1,84 @@
+import pyaudio
+import wave
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk) 
+
+class Recording(pyaudio.PyAudio):
+    def __init__(self, config):
+        super().__init__()
+        self.FORMAT = pyaudio.paInt16
+        self.FRAMES_PER_BUFFER = int(config["Audio Configuration"]["frames_per_buffer"])
+        self.RATE = int(config["Audio Configuration"]["rate"])
+        self.CHANNELS = int(config["Audio Configuration"]["channels"])
+
+    def print_config(self):
+        print("FRAMES_PER_BUFFER: ", self.FRAMES_PER_BUFFER)
+        print("RATE: ", self.RATE)
+        print("CHANNELS: ", self.CHANNELS)
+    
+    def start_recording(self):
+        self.print_config()
+        stream = self.open(format=self.FORMAT, frames_per_buffer=self.FRAMES_PER_BUFFER, rate=self.RATE, channels=self.CHANNELS, input=True)
+        seconds = 5
+        frames = [] #store the buffer
+        TOTAL_BUFFER_COUNT = self.RATE/self.FRAMES_PER_BUFFER*seconds
+        for buffer in range(0, int(TOTAL_BUFFER_COUNT)):
+            data = stream.read(self.FRAMES_PER_BUFFER)
+            frames.append(data)
+        stream.stop_stream()
+        stream.close()
+        print("Ended recording...")
+
+        # Set the parameters of the output file
+        self.set_output_file(frames)
+        
+    def set_output_file(self, frames):
+        obj = wave.open("output.wav", "wb")
+        obj.setframerate(self.RATE)
+        obj.setnchannels(self.CHANNELS)
+        obj.setsampwidth(self.get_sample_size(self.FORMAT))
+        obj.writeframes(b"".join(frames))
+        obj.close()
+    def show_wave(self, master_frame):
+        obj = wave.open("output.wav", "rb")
+        signal_array = np.frombuffer(obj.readframes(-1), dtype=np.int16)
+        total_duration = obj.getnframes() / obj.getframerate() # no. of samples / sample frequency
+        times = np.linspace(0, total_duration, num=len(signal_array))
+        
+        # Figure for plotting the signal
+        fig = Figure(figsize = (5,5), dpi= 100)
+
+        plt1 = fig.add_subplot(111)
+        plt1.plot(times,signal_array)
+        plt1.set_title(f"Audio Signal of output.wav")
+        plt1.set_ylabel("Signal Wave")
+        plt1.set_xlabel("Time in Seconds")
+        plt1.set_xlim(0, total_duration)
+        
+        # Figure Canvas for us to draw the figure inside Tkinter
+        canvas = FigureCanvasTkAgg(fig, master = master_frame)
+        obj.close()
+        return canvas
+    
+    def open_file(self, buffer, master_frame):
+        filename = buffer.split("/")[-1]
+        obj = wave.open(buffer, "rb")
+        signal_array = np.frombuffer(obj.readframes(-1), dtype=np.int16)
+        total_duration = obj.getnframes() / obj.getframerate() # no. of samples / sample frequency
+        times = np.linspace(0, total_duration, num=len(signal_array))
+        
+        fig = Figure(figsize = (5,5), dpi= 100)
+
+        plt1 = fig.add_subplot(111)
+        plt1.plot(times,signal_array)
+        plt1.set_title(f"Audio Signal of {filename}")
+        plt1.set_ylabel("Signal Wave")
+        plt1.set_xlabel("Time in Seconds")
+        plt1.set_xlim(0, total_duration)
+        
+        canvas = FigureCanvasTkAgg(fig, master = master_frame)
+        obj.close()
+        return canvas
+
